@@ -2,6 +2,7 @@ import type { CanvasRenderingContext2D } from "canvas";
 import type { PathLike } from "node:fs";
 import { CanvasComponentType } from "../enums/canvas.js";
 import type { AnyCanvasComponent, CanvasColorResolvable, CanvasContainer, CanvasFontWeight, CanvasRoot, ComponentOrBuilder, ContainerComponentBuilder, DrawOption, ImageLoadOption, ImageOption, ImageOptionArc, ImageOptionEllipse, ImageOptionRectangle, ImageOptionRoundRectangle, OperationOption, ShadowOption, TextOption } from "../types/canvas.js";
+import type { RequireOneWith } from "../types/utils.js";
 declare abstract class CanvasComponentBuilder<DataType extends AnyCanvasComponent> {
     data: Partial<DataType>;
     constructor(data?: Partial<DataType>);

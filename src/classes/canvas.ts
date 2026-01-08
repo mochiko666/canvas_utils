@@ -47,7 +47,9 @@ export class RootBuilder extends CanvasComponentBuilder<CanvasRoot> {
     super({ type: CanvasComponentType.Root, ...data });
     this.containers = containers?.map((c) => resolveBuilder(c, ContainerBuilder)) ?? [];
   }
-  public setSize = (width: number, height: number): this => this.assign({ size: [width, height] });
+  public setSize(width: number, height: number): this {
+    return this.assign({ size: [width, height] });
+  }
   public setContainers(...containers: ComponentOrBuilder<CanvasComponentType.Container>[]): this {
     this.containers = containers.map((c) => resolveBuilder(c, ContainerBuilder));
     return this;
@@ -75,12 +77,14 @@ export class RootBuilder extends CanvasComponentBuilder<CanvasRoot> {
     );
     return this;
   }
-  public build = (): CanvasRoot => ({
-    type: CanvasComponentType.Root,
-    size: [0, 0],
-    ...this.data,
-    containers: this.containers.map((container) => container.build()),
-  });
+  public build(): CanvasRoot {
+    return {
+      type: CanvasComponentType.Root,
+      size: [0, 0],
+      ...this.data,
+      containers: this.containers.map((container) => container.build()),
+    };
+  }
 }
 export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
   public components: ContainerComponentBuilder[];
@@ -88,14 +92,22 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
     super({ type: CanvasComponentType.Container, ...data });
     this.components = components?.map((component) => createComponentBuilder(component)) ?? [];
   }
-  public setOffset = (x: number, y: number): this => this.assign({ offset: [x, y] });
-  public setSize = (width: number, height: number): this => this.assign({ size: [width, height] });
-  public setFonts = (fonts: Record<string, string>): this => this.assign({ fonts });
+  public setOffset(x: number, y: number): this {
+    return this.assign({ offset: [x, y] });
+  }
+  public setSize(width: number, height: number): this {
+    return this.assign({ size: [width, height] });
+  }
+  public setFonts(fonts: Record<string, string>): this {
+    return this.assign({ fonts });
+  }
   public addFonts(fonts: Record<string, string>): this {
     this.data.fonts = Object.assign(this.data.fonts ?? {}, fonts);
     return this;
   }
-  public addFont = (family: string, path: string): this => this.addFonts({ [family]: path });
+  public addFont(family: string, path: string): this {
+    return this.addFonts({ [family]: path });
+  }
   public addRectComponents(
     ...components: ComponentOrBuilder<CanvasComponentType.Rectangle>[]
   ): this {
@@ -130,7 +142,9 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
     this.components.push(...components.map((c) => resolveBuilder(c, OperationComponentBuilder)));
     return this;
   }
-  public setComponents = (...components: DrawOption[]): this => this.assign({ components });
+  public setComponents(...components: DrawOption[]): this {
+    return this.assign({ components });
+  }
   /**
    * Removes, replaces, or inserts components for this container.
    *
@@ -150,13 +164,15 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
     );
     return this;
   }
-  public build = (): CanvasContainer => ({
-    type: CanvasComponentType.Container,
-    offset: [0, 0],
-    size: [0, 0],
-    ...this.data,
-    components: this.components.map((component) => component.build()),
-  });
+  public build(): CanvasContainer {
+    return {
+      type: CanvasComponentType.Container,
+      offset: [0, 0],
+      size: [0, 0],
+      ...this.data,
+      components: this.components.map((component) => component.build()),
+    };
+  }
 }
 abstract class CanvasOptionBuilder<
   OptionType extends ImageOption | TextOption
@@ -175,101 +191,170 @@ abstract class CanvasOptionBuilder<
   }
 }
 export class RectComponentBuilder extends CanvasOptionBuilder<ImageOptionRectangle> {
-  public setSize = (width: number, height: number): this => this.assign({ size: [width, height] });
-  public setColor = (color: CanvasColorResolvable): this => this.assign({ color });
-  public setStroke = (stroke: boolean | CanvasColorResolvable): this => this.assign({ stroke });
-  public build = (): ImageOptionRectangle => ({
-    type: CanvasComponentType.Rectangle,
-    offset: [0, 0],
-    size: [0, 0],
-    ...this.data,
-  });
+  public setSize(width: number, height: number): this {
+    return this.assign({ size: [width, height] });
+  }
+  public setColor(color: CanvasColorResolvable): this {
+    return this.assign({ color });
+  }
+  public setStroke(stroke: boolean | CanvasColorResolvable): this {
+    return this.assign({ stroke });
+  }
+  public build(): ImageOptionRectangle {
+    return {
+      type: CanvasComponentType.Rectangle,
+      offset: [0, 0],
+      size: [0, 0],
+      ...this.data,
+    };
+  }
 }
 export class RoundRectComponentBuilder extends CanvasOptionBuilder<ImageOptionRoundRectangle> {
-  public setSize = (width: number, height: number): this => this.assign({ size: [width, height] });
-  public setColor = (color: CanvasColorResolvable): this => this.assign({ color });
-  public setStroke = (stroke: boolean | CanvasColorResolvable): this => this.assign({ stroke });
-  public setRadii = (radii: number | number[]): this => this.assign({ radii });
-  public build = (): ImageOptionRoundRectangle => ({
-    type: CanvasComponentType.Round,
-    offset: [0, 0],
-    size: [0, 0],
-    ...this.data,
-  });
+  public setSize(width: number, height: number): this {
+    return this.assign({ size: [width, height] });
+  }
+  public setColor(color: CanvasColorResolvable): this {
+    return this.assign({ color });
+  }
+  public setStroke(stroke: boolean | CanvasColorResolvable): this {
+    return this.assign({ stroke });
+  }
+  public setRadii(radii: number | number[]): this {
+    return this.assign({ radii });
+  }
+  public build(): ImageOptionRoundRectangle {
+    return {
+      type: CanvasComponentType.Round,
+      offset: [0, 0],
+      size: [0, 0],
+      ...this.data,
+    };
+  }
 }
 export class ArcComponentBuilder extends CanvasOptionBuilder<ImageOptionArc> {
-  public setColor = (color: CanvasColorResolvable): this => this.assign({ color });
-  public setStroke = (stroke: boolean | CanvasColorResolvable): this => this.assign({ stroke });
-  public setRadius = (radius: number): this => this.assign({ radius });
-  public setAngle = (start: number, end: number): this => this.assign({ angle: [start, end] });
-  public setCounterClockWise = (counterClockWise: boolean): this =>
-    this.assign({ counterClockWise });
-  public build = (): ImageOptionArc => ({
-    type: CanvasComponentType.Arc,
-    offset: [0, 0],
-    radius: 0,
-    angle: [0, 0],
-    ...this.data,
-  });
+  public setColor(color: CanvasColorResolvable): this {
+    return this.assign({ color });
+  }
+  public setStroke(stroke: boolean | CanvasColorResolvable): this {
+    return this.assign({ stroke });
+  }
+  public setRadius(radius: number): this {
+    return this.assign({ radius });
+  }
+  public setAngle(start: number, end: number): this {
+    return this.assign({ angle: [start, end] });
+  }
+  public setCounterClockWise(counterClockWise: boolean): this {
+    return this.assign({ counterClockWise });
+  }
+  public build(): ImageOptionArc {
+    return {
+      type: CanvasComponentType.Arc,
+      offset: [0, 0],
+      radius: 0,
+      angle: [0, 0],
+      ...this.data,
+    };
+  }
 }
 export class EllipseComponentBuilder extends CanvasOptionBuilder<ImageOptionEllipse> {
-  public setColor = (color: CanvasColorResolvable): this => this.assign({ color });
-  public setStroke = (stroke: boolean | CanvasColorResolvable): this => this.assign({ stroke });
-  public setRadius = (major: number, minor: number): this =>
-    this.assign({ radius: [major, minor] });
-  public setRotation = (rotation: number): this => this.assign({ rotation });
-  public setAngle = (start: number, end: number): this => this.assign({ angle: [start, end] });
-  public setCounterClockWise = (counterClockWise: boolean): this =>
-    this.assign({ counterClockWise });
-  public build = (): ImageOptionEllipse => ({
-    type: CanvasComponentType.Ellipse,
-    offset: [0, 0],
-    radius: [0, 0],
-    rotation: 0,
-    angle: [0, 0],
-    ...this.data,
-  });
+  public setColor(color: CanvasColorResolvable): this {
+    return this.assign({ color });
+  }
+  public setStroke(stroke: boolean | CanvasColorResolvable): this {
+    return this.assign({ stroke });
+  }
+  public setRadius(major: number, minor: number): this {
+    return this.assign({ radius: [major, minor] });
+  }
+  public setRotation(rotation: number): this {
+    return this.assign({ rotation });
+  }
+  public setAngle(start: number, end: number): this {
+    return this.assign({ angle: [start, end] });
+  }
+  public setCounterClockWise(counterClockWise: boolean): this {
+    return this.assign({ counterClockWise });
+  }
+  public build(): ImageOptionEllipse {
+    return {
+      type: CanvasComponentType.Ellipse,
+      offset: [0, 0],
+      radius: [0, 0],
+      rotation: 0,
+      angle: [0, 0],
+      ...this.data,
+    };
+  }
 }
 export class FileComponentBuilder extends CanvasOptionBuilder<ImageLoadOption> {
-  public setSize = (width: number, height: number): this => this.assign({ size: [width, height] });
-  public setPath = (path: PathLike): this => this.assign({ path });
-  public build = (): ImageLoadOption => ({
-    type: CanvasComponentType.File,
-    path: "",
-    offset: [0, 0],
-    size: [0, 0],
-    ...this.data,
-  });
+  public setSize(width: number, height: number): this {
+    return this.assign({ size: [width, height] });
+  }
+  public setPath(path: PathLike): this {
+    return this.assign({ path });
+  }
+  public build(): ImageLoadOption {
+    return {
+      type: CanvasComponentType.File,
+      path: "",
+      offset: [0, 0],
+      size: [0, 0],
+      ...this.data,
+    };
+  }
 }
 export class TextComponentBuilder extends CanvasOptionBuilder<TextOption> {
   public constructor(data?: Partial<TextOption>) {
     super({ type: CanvasComponentType.Text, ...data });
   }
-  public setColor = (color: CanvasColorResolvable): this => this.assign({ color });
-  public setStroke = (stroke: boolean | CanvasColorResolvable): this => this.assign({ stroke });
-  public setText = (text: string): this => this.assign({ text });
-  public setFontFamily = (font: string): this => this.assign({ font });
-  public setFontSize = (fontSize: string | number): this => this.assign({ fontSize });
-  public setFontWeight = (fontWeight: CanvasFontWeight): this => this.assign({ fontWeight });
-  public setFont = (font: string, fontSize: string | number, fontWeight: CanvasFontWeight): this =>
-    this.assign({ font, fontSize, fontWeight });
-  public setMaxWidth = (maxWidth: number): this => this.assign({ maxWidth });
-  public setTextAlign = (textAlign: CanvasTextAlign): this => this.assign({ textAlign });
-  public build = (): TextOption => ({
-    type: CanvasComponentType.Text,
-    text: "",
-    offset: [0, 0],
-    ...this.data,
-  });
+  public setColor(color: CanvasColorResolvable): this {
+    return this.assign({ color });
+  }
+  public setStroke(stroke: boolean | CanvasColorResolvable): this {
+    return this.assign({ stroke });
+  }
+  public setText(text: string): this {
+    return this.assign({ text });
+  }
+  public setFontFamily(font: string): this {
+    return this.assign({ font });
+  }
+  public setFontSize(fontSize: string | number): this {
+    return this.assign({ fontSize });
+  }
+  public setFontWeight(fontWeight: CanvasFontWeight): this {
+    return this.assign({ fontWeight });
+  }
+  public setFont(font: string, fontSize: string | number, fontWeight: CanvasFontWeight): this {
+    return this.assign({ font, fontSize, fontWeight });
+  }
+  public setMaxWidth(maxWidth: number): this {
+    return this.assign({ maxWidth });
+  }
+  public setTextAlign(textAlign: CanvasTextAlign): this {
+    return this.assign({ textAlign });
+  }
+  public build(): TextOption {
+    return {
+      type: CanvasComponentType.Text,
+      text: "",
+      offset: [0, 0],
+      ...this.data,
+    };
+  }
 }
 export class OperationComponentBuilder extends CanvasComponentBuilder<OperationOption> {
-  public setOperation = (operation: (ctx: CanvasRenderingContext2D) => void): this =>
-    this.assign({ operation });
-  public build = (): OperationOption => ({
-    type: CanvasComponentType.Operation,
-    operation: (ctx) => undefined,
-    ...this.data,
-  });
+  public setOperation(operation: (ctx: CanvasRenderingContext2D) => void): this {
+    return this.assign({ operation });
+  }
+  public build(): OperationOption {
+    return {
+      type: CanvasComponentType.Operation,
+      operation: (ctx) => undefined,
+      ...this.data,
+    };
+  }
 }
 const resolveBuilder = <
   DataType extends AnyCanvasComponent,
@@ -298,9 +383,9 @@ const builderMap: {
   [CanvasComponentType.Operation]: OperationComponentBuilder,
 };
 
-function createComponentBuilder<ComponentType extends keyof MappedComponentTypes>(
+const createComponentBuilder = <ComponentType extends keyof MappedComponentTypes>(
   data: Extract<AnyCanvasComponent, { type: ComponentType }> | MappedComponentTypes[ComponentType]
-): MappedComponentTypes[ComponentType] {
+): MappedComponentTypes[ComponentType] => {
   if (data instanceof CanvasComponentBuilder) return data;
   return new builderMap[data.type](data);
-}
+};

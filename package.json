@@ -1,5 +1,5 @@
 {
-  "name": "canvas_utils",
+  "name": "@mochiko666/canvas_utils",
   "version": "1.0.0",
   "description": "theres no use",
   "homepage": "https://github.com/mochiko666/canvas_utils#readme",
@@ -9,6 +9,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mochiko666/canvas_utils.git"
+  },
+  "publishConfig": {
+    "@mochiko666:registry": "https://npm.pkg.github.com"
   },
   "license": "CC0-1.0",
   "author": "",
@@ -26,6 +29,7 @@
     "package.json"
   ],
   "scripts": {
+    "test": "tsc --noEmit",
     "build": "tsc",
     "prepare": "npm run build"
   },

@@ -32,9 +32,9 @@ abstract class CanvasComponentBuilder<DataType extends AnyCanvasComponent> {
    * @param data The source object from which to copy properties.
    * @returns The builder with the data merged. So you can chain methods like below;
    * ```ts
-   * const root = new RootBuilder()
+   * const root = new ContainerBuilder()
    *   .assign( { size: [666, 666] } )
-   *   .addContainers((builder) => builder.setSize(60, 60));
+   *   .addRectComponents((builder) => builder.setSize(60, 60));
    * ```
    */
   public assign(data?: Partial<DataType>): this {
@@ -99,7 +99,7 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
   }
 
   /**
-   * Adds the containers to this root component.
+   * Adds the containers to this container.
    * @param containers The containers to add.
    */
   public addContainers(

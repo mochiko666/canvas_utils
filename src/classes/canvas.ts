@@ -2,12 +2,11 @@ import type { CanvasRenderingContext2D } from "canvas";
 import type { PathLike } from "node:fs";
 import { CanvasComponentType } from "../enums/canvas.js";
 import type {
+  AnyCanvasBuilder,
   AnyCanvasComponent,
   CanvasColorResolvable,
   CanvasContainer,
   CanvasFontWeight,
-  CanvasRoot,
-  ContainerComponentBuilder,
   DrawOption,
   ImageLoadOption,
   ImageOption,
@@ -47,88 +46,11 @@ abstract class CanvasComponentBuilder<DataType extends AnyCanvasComponent> {
    */
   abstract build(): DataType;
 }
-export class RootBuilder extends CanvasComponentBuilder<CanvasRoot> {
-  /**
-   * The containers of the component.
-   */
-  public containers: ContainerBuilder[];
-  public constructor({ containers, ...data }: Partial<CanvasRoot> = {}) {
-    super({ type: CanvasComponentType.Root, ...data });
-    this.containers = containers?.map((c) => resolveBuilder(c, ContainerBuilder)) ?? [];
-  }
-  /**
-   * Sets the size for this root component.
-   * @param width The horizontal length.
-   * @param height The vertical length.
-   */
-  public setSize(width: number, height: number): this {
-    return this.assign({ size: [width, height] });
-  }
-  /**
-   * Sets the containers for this root component.
-   * @param containers The containers to use.
-   */
-  public setContainers(
-    ...containers: (
-      | CanvasContainer
-      | ContainerBuilder
-      | ((builder: ContainerBuilder) => ContainerBuilder)
-    )[]
-  ): this {
-    this.containers = containers.map((c) => resolveBuilder(c, ContainerBuilder));
-    return this;
-  }
-  /**
-   * Adds the containers to this root component.
-   * @param containers The containers to add.
-   */
-  public addContainers(
-    ...containers: (
-      | CanvasContainer
-      | ContainerBuilder
-      | ((builder: ContainerBuilder) => ContainerBuilder)
-    )[]
-  ): this {
-    this.containers.push(...containers.map((c) => resolveBuilder(c, ContainerBuilder)));
-    return this;
-  }
-  /**
-   * Removes, replaces, or inserts containers for this root component.
-   *
-   * @param start - The index to start removing, replacing or inserting containers.
-   * @param deleteCount - The amount of containers to remove.
-   * @param components - The containers to set.
-   */
-  public spliceContainers(
-    start: number,
-    deleteCount: number,
-    ...items: (
-      | CanvasContainer
-      | ContainerBuilder
-      | ((builder: ContainerBuilder) => ContainerBuilder)
-    )[]
-  ): this {
-    this.containers.splice(
-      start,
-      deleteCount,
-      ...items.map((c) => resolveBuilder(c, ContainerBuilder))
-    );
-    return this;
-  }
-  public build(): CanvasRoot {
-    return {
-      type: CanvasComponentType.Root,
-      size: [0, 0],
-      ...this.data,
-      containers: this.containers.map((container) => container.build()),
-    };
-  }
-}
 export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
   /**
    * The components of the container.
    */
-  public components: ContainerComponentBuilder[];
+  public components: AnyCanvasBuilder[];
   public constructor({ components, ...data }: Partial<CanvasContainer> = {}) {
     super({ type: CanvasComponentType.Container, ...data });
     this.components = components?.map((component) => createComponentBuilder(component)) ?? [];
@@ -174,6 +96,21 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
    */
   public addFont(family: string, path: string): this {
     return this.addFonts({ [family]: path });
+  }
+
+  /**
+   * Adds the containers to this root component.
+   * @param containers The containers to add.
+   */
+  public addContainers(
+    ...containers: (
+      | CanvasContainer
+      | ContainerBuilder
+      | ((builder: ContainerBuilder) => ContainerBuilder)
+    )[]
+  ): this {
+    this.components.push(...containers.map((c) => resolveBuilder(c, ContainerBuilder)));
+    return this;
   }
   /**
    * Adds the rectangle components to this container.
@@ -286,7 +223,7 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
   public spliceComponents(
     start: number,
     deleteCount: number,
-    ...items: (DrawOption | ContainerComponentBuilder)[]
+    ...items: (AnyCanvasComponent | AnyCanvasBuilder)[]
   ): this {
     this.components.splice(
       start,
@@ -658,7 +595,6 @@ const resolveBuilder = <
 const builderMap: {
   [K in keyof MappedComponentTypes]: new (data: any) => MappedComponentTypes[K];
 } = {
-  [CanvasComponentType.Root]: RootBuilder,
   [CanvasComponentType.Container]: ContainerBuilder,
   [CanvasComponentType.Rectangle]: RectComponentBuilder,
   [CanvasComponentType.Round]: RoundRectComponentBuilder,

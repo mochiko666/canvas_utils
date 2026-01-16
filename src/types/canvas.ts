@@ -7,7 +7,6 @@ import type {
   FileComponentBuilder,
   OperationComponentBuilder,
   RectComponentBuilder,
-  RootBuilder,
   RoundRectComponentBuilder,
   TextComponentBuilder,
 } from "../classes/canvas.js";
@@ -15,7 +14,6 @@ import type { CanvasComponentType } from "../enums/canvas.js";
 import type { Projection, RequireOneWith } from "./utils.js";
 import type { Vector2D } from "./vector.js";
 
-export type CanvasColorResolvable = string | CanvasGradient | CanvasPattern;
 export interface Offset {
   /**
    * The coordinates of the staring point to draw, in pixels.
@@ -26,10 +24,11 @@ export interface Offset {
 export interface Size {
   /**
    * The size of the image.
-   * The format is `[width, height]`.
+   * @default [0, 0]
    */
   size: Vector2D;
 }
+export type CanvasColorResolvable = string | CanvasGradient | CanvasPattern;
 export interface Color {
   /**
    * The color, gradient, or pattern to use inside shapes. \
@@ -49,14 +48,17 @@ export interface BaseComponent<ComponentType extends CanvasComponentType> {
    */
   type: ComponentType;
 }
-export interface CanvasRoot extends BaseComponent<CanvasComponentType.Root>, Size {
-  containers: CanvasContainer[];
-}
+
+export type DrawOption = ImageOption | TextOption | OperationOption;
+export type AnyCanvasComponent = CanvasContainer | DrawOption;
 export interface CanvasContainer
   extends BaseComponent<CanvasComponentType.Container>,
     Offset,
     Size {
-  components: DrawOption[];
+  /**
+   * The components of the container.
+   */
+  components: AnyCanvasComponent[];
   /**
    * The mapping from font families (names) to the paths for the font file.
    */
@@ -74,10 +76,7 @@ export interface ShadowOption extends Offset {
    */
   blur: number;
 }
-export type CanvasOptionType = Exclude<
-  CanvasComponentType,
-  CanvasComponentType.Root | CanvasComponentType.Container
->;
+export type CanvasOptionType = Exclude<CanvasComponentType, CanvasComponentType.Container>;
 export interface BaseDrawOption<OptionType extends CanvasOptionType>
   extends BaseComponent<OptionType>,
     Offset,
@@ -270,20 +269,7 @@ export interface OperationOption extends BaseComponent<CanvasComponentType.Opera
 }
 export type CanvasFontWeight = "normal" | "bold" | "lighter" | "bolder" | number;
 
-export type DrawOption = ImageOption | TextOption | OperationOption;
-export type AnyCanvasComponent = CanvasRoot | CanvasContainer | DrawOption;
-export type AnyCanvasBuilder =
-  | RootBuilder
-  | ContainerBuilder
-  | RectComponentBuilder
-  | RoundRectComponentBuilder
-  | ArcComponentBuilder
-  | EllipseComponentBuilder
-  | FileComponentBuilder
-  | TextComponentBuilder
-  | OperationComponentBuilder;
 export interface MappedComponentTypes {
-  [CanvasComponentType.Root]: RootBuilder;
   [CanvasComponentType.Container]: ContainerBuilder;
   [CanvasComponentType.Rectangle]: RectComponentBuilder;
   [CanvasComponentType.Round]: RoundRectComponentBuilder;
@@ -297,4 +283,4 @@ export type ComponentOrBuilder<ComponentType extends CanvasComponentType> =
   | Extract<AnyCanvasComponent, { type: ComponentType }>
   | MappedComponentTypes[ComponentType]
   | Projection<MappedComponentTypes[ComponentType]>;
-export type ContainerComponentBuilder = MappedComponentTypes[CanvasOptionType];
+export type AnyCanvasBuilder = MappedComponentTypes[CanvasComponentType];

@@ -7,27 +7,25 @@ import {
 } from "canvas";
 import { readFile } from "fs/promises";
 import { CanvasComponentType } from "../enums/canvas.js";
-import type { CanvasContainer, CanvasRoot, ImageOption, TextOption } from "../types/canvas.js";
+import type { CanvasContainer, ImageOption, TextOption } from "../types/canvas.js";
 
-export async function drawFromRoot(root: CanvasRoot): Promise<Canvas> {
-  const { size, containers } = root;
-  const canvas = createCanvas(...size);
-  const ctx = canvas.getContext("2d");
-  for (const container of containers) {
-    const { offset, size } = container;
-    const result = await drawFromContainer(container);
-    ctx.drawImage(result, ...offset, ...size);
-  }
-  return canvas;
-}
-export async function drawFromContainer(container: CanvasContainer): Promise<Canvas> {
+export async function drawFromContainer(
+  container: CanvasContainer,
+  canvas?: Canvas
+): Promise<Canvas> {
   const { size, components, fonts } = container;
   if (fonts) for (const [name, path] of Object.entries(fonts)) registerFont(path, { family: name });
-  const canvas = createCanvas(...size);
+  
+  canvas ??= createCanvas(...size);
   const ctx = canvas.getContext("2d");
 
   for (const component of components) {
     switch (component.type) {
+      case CanvasComponentType.Container:
+        const { offset, size } = component;
+        const result = await drawFromContainer(component);
+        ctx.drawImage(result, ...offset, ...size);
+        break;
       case CanvasComponentType.Text:
         drawText(ctx, component, true);
         break;

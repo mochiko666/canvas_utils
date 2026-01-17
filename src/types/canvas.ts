@@ -28,19 +28,60 @@ export interface Size {
    */
   size: Vector2D;
 }
-export type CanvasColorResolvable = string | CanvasGradient | CanvasPattern;
+export type CanvasColorResolvable = string | GradientOption;
 export interface Color {
   /**
    * The color, gradient, or pattern to use inside shapes. \
    * One of the following:
-   * * A string parsed as CSS [\<color>](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/color_value)
+   * * A string parsed as CSS [`<color>`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/color_value)
    * value.
-   * * A [CanvasGradient](https://developer.mozilla.org/en-US/docs/Web/API/CanvasGradient) object
+   * * A [`CanvasGradient`](https://developer.mozilla.org/en-US/docs/Web/API/CanvasGradient) object
    * (a linear or radial gradient).
-   * * A [CanvasPattern](https://developer.mozilla.org/en-US/docs/Web/API/CanvasPattern) object (a repeating image).
+   * * A [`CanvasPattern`](https://developer.mozilla.org/en-US/docs/Web/API/CanvasPattern) object (a repeating image).
    * @default "#000000" (Black)
    */
   color?: CanvasColorResolvable;
+}
+export type GradientOption = LinearGradientOption | RadialGradientOption;
+export interface LinearGradientOption {
+  /**
+   * @default 0
+   */
+  x0?: number;
+  /**
+   * @default 0
+   */
+  y0?: number;
+  /**
+   * @default 0
+   */
+  x1?: number;
+  /**
+   * @default 0
+   */
+  y1?: number;
+  timestamp: GradientTimestamps[];
+}
+export interface RadialGradientOption extends LinearGradientOption {
+  /**
+   * @default 0
+   */
+  r0?: number;
+  /**
+   * @default 0
+   */
+  r1?: number;
+}
+export interface GradientTimestamps {
+  /**
+   * A number between `0` and `1`, inclusive, representing the position of the color stop. \
+   * `0` represents the start of the gradient and `1` represents the end.
+   */
+  offset: number;
+  /**
+   * A CSS [`<color>`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/color_value) value representing the color of the stop.
+   */
+  color: string;
 }
 export interface BaseComponent<ComponentType extends CanvasComponentType> {
   /**
@@ -52,9 +93,7 @@ export interface BaseComponent<ComponentType extends CanvasComponentType> {
 export type DrawOption = ImageOption | TextOption | OperationOption;
 export type AnyCanvasComponent = CanvasContainer | DrawOption;
 export interface CanvasContainer
-  extends BaseComponent<CanvasComponentType.Container>,
-    Offset,
-    Size {
+  extends BaseComponent<CanvasComponentType.Container>, Offset, Size {
   /**
    * The components of the container.
    */
@@ -78,9 +117,7 @@ export interface ShadowOption extends Offset {
 }
 export type CanvasOptionType = Exclude<CanvasComponentType, CanvasComponentType.Container>;
 export interface BaseDrawOption<OptionType extends CanvasOptionType>
-  extends BaseComponent<OptionType>,
-    Offset,
-    Color {
+  extends BaseComponent<OptionType>, Offset, Color {
   /**
    * The alpha (transparency) value that is applied to shapes and images before they are drawn onto the canvas. \
    * A number between `0.0` (fully transparent) and `1.0` (fully opaque), inclusive.
@@ -123,8 +160,10 @@ export interface ImageOptionRoundRectangle extends BaseImageOption<CanvasCompone
   radii?: number | number[];
 }
 
-export interface BaseCircleShapes<ComponentType extends CanvasOptionType>
-  extends Omit<BaseDrawOption<ComponentType>, "size"> {
+export interface BaseCircleShapes<ComponentType extends CanvasOptionType> extends Omit<
+  BaseDrawOption<ComponentType>,
+  "size"
+> {
   /**
    * The angle at which the shape starts / ends in radians, measured from the positive x-axis. \
    * The format is `[start, end]`.
@@ -154,8 +193,10 @@ export interface ImageOptionEllipse extends BaseCircleShapes<CanvasComponentType
    */
   rotation: number;
 }
-export interface ImageLoadOption
-  extends Omit<BaseImageOption<CanvasComponentType.File>, "color" | "stroke"> {
+export interface ImageLoadOption extends Omit<
+  BaseImageOption<CanvasComponentType.File>,
+  "color" | "stroke"
+> {
   /**
    * The path for the image file.
    */

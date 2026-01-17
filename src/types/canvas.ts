@@ -45,18 +45,22 @@ export interface Color {
 export type GradientOption = LinearGradientOption | RadialGradientOption;
 export interface LinearGradientOption {
   /**
+   * The x-axis coordinate of the start point.
    * @default 0
    */
   x0?: number;
   /**
+   * The y-axis coordinate of the start point.
    * @default 0
    */
   y0?: number;
   /**
+   * The x-axis coordinate of the end point.
    * @default 0
    */
   x1?: number;
   /**
+   * The y-axis coordinate of the end point.
    * @default 0
    */
   y1?: number;
@@ -64,10 +68,12 @@ export interface LinearGradientOption {
 }
 export interface RadialGradientOption extends LinearGradientOption {
   /**
+   * The radius of the start circle. Must be non-negative and finite.
    * @default 0
    */
   r0?: number;
   /**
+   * The radius of the end circle. Must be non-negative and finite.
    * @default 0
    */
   r1?: number;

@@ -3,4 +3,6 @@ export * from "./enums/canvas.js";
 export * from "./types/canvas.js";
 export * from "./types/utils.js";
 export * from "./types/vector.js";
+export * from "./types/color.js";
 export * from "./utils/canvas.js";
+export * from "./utils/color.js";

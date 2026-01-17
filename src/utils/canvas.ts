@@ -14,6 +14,11 @@ import type {
   TextOption,
 } from "../types/canvas.js";
 
+/**
+ * Interprets a {@link CanvasContainer} and draw from it.
+ * @param container A container to draw from.
+ * @param canvas Optional. Used to draw on a specific canvas instead of new one.
+ */
 export async function drawFromContainer(
   container: CanvasContainer,
   canvas?: Canvas,
@@ -23,44 +28,33 @@ export async function drawFromContainer(
 
   canvas ??= createCanvas(...size);
   const ctx = canvas.getContext("2d");
-
-  for (const component of components) {
+  for (const component of components)
     switch (component.type) {
-      case CanvasComponentType.Container:
+      case CanvasComponentType.Container: {
         const { offset, size } = component;
         const result = await drawFromContainer(component);
         ctx.drawImage(result, ...offset, ...size);
         break;
-      case CanvasComponentType.Text:
+      }
+      case CanvasComponentType.Text: {
         drawText(ctx, component, true);
         break;
-      case CanvasComponentType.Operation:
+      }
+      case CanvasComponentType.Operation: {
         ctx.save();
         component.operation(ctx);
         ctx.restore();
         break;
-      default:
+      }
+      default: {
         await drawImage(ctx, component, true);
         break;
+      }
     }
-  }
+
   return canvas;
 }
 
-export function init(
-  context: CanvasRenderingContext2D,
-  option: ImageOption | TextOption,
-): CanvasRenderingContext2D {
-  const { alpha, shadow } = option;
-  context.shadowColor = shadow?.color ?? "rgba(0, 0, 0, 0.00)";
-  context.shadowBlur = shadow?.blur ?? 0;
-  const [sx, sy] = shadow?.offset ?? [0, 0];
-  context.shadowOffsetX = sx;
-  context.shadowOffsetY = sy;
-
-  context.globalAlpha = alpha ?? 1;
-  return context;
-}
 export async function drawImage(
   context: CanvasRenderingContext2D,
   option: ImageOption,
@@ -76,13 +70,11 @@ export async function drawImage(
     const buffer = await readFile(option.path);
     const image = await loadImage(buffer);
     context.drawImage(image, ...offset, ...size);
-    if(keep) context.restore();
+    if (keep) context.restore();
     return context;
   }
 
-  const { color, stroke } = option;
-  context.fillStyle = resolveColor(context, color ?? "#000000");
-
+  context.beginPath();
   switch (type) {
     case CanvasComponentType.Rectangle: {
       const { size } = option;
@@ -105,9 +97,15 @@ export async function drawImage(
       break;
     }
   }
-  context.strokeStyle =
-    stroke && typeof stroke !== "boolean" ? resolveColor(context, stroke) : "#000000";
-  context[stroke ? "stroke" : "fill"]();
+
+  const { color, stroke } = option;
+  if (stroke) {
+    context.strokeStyle = typeof stroke === "boolean" ? "#000000" : resolveColor(context, stroke);
+    context.stroke();
+  } else {
+    context.fillStyle = resolveColor(context, color);
+    context.fill();
+  }
   if (keep) context.restore();
   return context;
 }
@@ -120,24 +118,42 @@ export function drawText(
   if (keep) context.save();
   const { text, offset, font, fontSize, fontWeight, color, maxWidth, textAlign, stroke } = option;
   init(context, option);
-  context.fillStyle = resolveColor(context, color ?? "#000000");
+  context.fillStyle = resolveColor(context, color);
 
   const resolvedSize = typeof fontSize === "number" ? fontSize + "px" : (fontSize ?? "10px");
   context.font = `${fontWeight ?? "normal"} ${resolvedSize} ${font || "sans-serif"}`;
   context.textAlign = textAlign ?? "start";
 
-  context.strokeStyle =
-    stroke && typeof stroke !== "boolean" ? resolveColor(context, stroke) : "#000000";
-  context[stroke ? "strokeText" : "fillText"](text, ...offset, maxWidth);
+  if (stroke) {
+    context.strokeStyle = typeof stroke === "boolean" ? "#000000" : resolveColor(context, stroke);
+    context.strokeText(text, ...offset, maxWidth);
+  } else {
+    context.fillStyle = resolveColor(context, color);
+    context.fillText(text, ...offset, maxWidth);
+  }
   if (keep) context.restore();
   return context;
 }
 
-function resolveColor(
+export function init(
   context: CanvasRenderingContext2D,
-  color: CanvasColorResolvable,
+  option: ImageOption | TextOption,
+): CanvasRenderingContext2D {
+  const { alpha, shadow } = option;
+  context.shadowColor = shadow?.color ?? "rgba(0, 0, 0, 0.00)";
+  context.shadowBlur = shadow?.blur ?? 0;
+  const [sx, sy] = shadow?.offset ?? [0, 0];
+  context.shadowOffsetX = sx;
+  context.shadowOffsetY = sy;
+
+  context.globalAlpha = alpha ?? 1;
+  return context;
+}
+export function resolveColor(
+  context: CanvasRenderingContext2D,
+  color?: CanvasColorResolvable,
 ): string | CanvasGradient | CanvasPattern {
-  if (typeof color === "string") return color;
+  if (!color || typeof color === "string") return color ?? "#000000";
 
   const defaults = {
     x0: 0,
@@ -152,9 +168,7 @@ function resolveColor(
     "r0" in color
       ? context.createRadialGradient(x0, y0, r0, x1, y1, r1)
       : context.createLinearGradient(x0, y0, x1, y1);
-  for (const stop of timestamp) {
-    const { offset, color } = stop;
-    gradient.addColorStop(offset, color);
-  }
+  for (const { offset, color } of timestamp) gradient.addColorStop(offset, color);
+
   return gradient;
 }

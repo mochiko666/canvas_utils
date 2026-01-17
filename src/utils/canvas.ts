@@ -76,6 +76,7 @@ export async function drawImage(
     const buffer = await readFile(option.path);
     const image = await loadImage(buffer);
     context.drawImage(image, ...offset, ...size);
+    if(keep) context.restore();
     return context;
   }
 

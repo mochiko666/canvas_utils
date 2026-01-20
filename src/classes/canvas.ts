@@ -1,24 +1,30 @@
-import type { CanvasRenderingContext2D } from "canvas";
+import type {
+  CanvasRenderingContext2D,
+  CanvasTextBaseline,
+  GlobalCompositeOperation,
+} from "canvas";
 import type { PathLike } from "node:fs";
 import { CanvasComponentType } from "../enums/canvas.js";
 import type {
   AnyCanvasBuilder,
   AnyCanvasComponent,
+  ArcOption,
   CanvasColorResolvable,
   CanvasContainer,
   CanvasFontWeight,
+  CanvasTransformOption,
+  DrawComponent,
   DrawOption,
-  ImageLoadOption,
+  EllipseOption,
   ImageOption,
-  ImageOptionArc,
-  ImageOptionEllipse,
-  ImageOptionRectangle,
-  ImageOptionRoundRectangle,
   MappedComponentTypes,
   OperationOption,
+  RectangleOption,
+  RoundRectangleOption,
   ShadowOption,
+  StrokeOption,
   TextOption,
-} from "../types/canvas.js";
+} from "../types/components.js";
 import type { RequireOneWith } from "../types/utils.js";
 
 abstract class CanvasComponentBuilder<DataType extends AnyCanvasComponent> {
@@ -46,7 +52,61 @@ abstract class CanvasComponentBuilder<DataType extends AnyCanvasComponent> {
    */
   abstract build(): DataType;
 }
-export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
+abstract class DrawComponentBuilder<
+  DataType extends DrawComponent,
+> extends CanvasComponentBuilder<DataType> {
+  /**
+   * Sets the offset for this component.
+   * @param x The x-axis coordinate of the offset.
+   * @param y The y-axis coordinate of the offset.
+   */
+  public setOffset(x: number, y: number): this {
+    this.data.offset = [x, y];
+    return this;
+  }
+  /**
+   * Sets the alpha for this component.
+   * @param alpha The transparency to use.
+   */
+  public setAlpha(alpha: number): this {
+    this.data.alpha = alpha;
+    return this;
+  }
+  /**
+   * Sets the shadow option for this component.
+   * @remarks The shadow option must have `color` property. Also either `offset` or `blur` must be set for the shadow to render.
+   * @param shadow The shadow option to use.
+   */
+  public setShadow(shadow: RequireOneWith<ShadowOption, "color">): this {
+    this.data.shadow = shadow;
+    return this;
+  }
+  /**
+   * Sets the composite operation for this component.
+   * @param composite The composite operation to use.
+   */
+  public setComposite(composite: GlobalCompositeOperation): this {
+    this.data.composite = composite;
+    return this;
+  }
+  /**
+   * Sets the transforms for this component.
+   * @param transforms The transform options to use.
+   */
+  public setTransforms(...transforms: CanvasTransformOption[]): this {
+    this.data.transforms = transforms;
+    return this;
+  }
+  /**
+   * Sets the transforms for this component.
+   * @param transforms The transform options to add to this component.
+   */
+  public addTransforms(...transforms: CanvasTransformOption[]): this {
+    this.data.transforms = this.data.transforms?.concat(...transforms) ?? transforms;
+    return this;
+  }
+}
+export class ContainerBuilder extends DrawComponentBuilder<CanvasContainer> {
   /**
    * The components of the container.
    */
@@ -54,14 +114,6 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
   public constructor({ components, ...data }: Partial<CanvasContainer> = {}) {
     super({ type: CanvasComponentType.Container, ...data });
     this.components = components?.map((component) => createComponentBuilder(component)) ?? [];
-  }
-  /**
-   * Sets the offset for this container.
-   * @param x The x-axis coordinate of the offset.
-   * @param y The y-axis coordinate of the offset.
-   */
-  public setOffset(x: number, y: number): this {
-    return this.assign({ offset: [x, y] });
   }
   /**
    * Sets the size for this container.
@@ -100,7 +152,7 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
 
   /**
    * Adds the containers to this container.
-   * @param containers The containers to add.
+   * @param containers The containers to add to this container.
    */
   public addContainers(
     ...containers: (
@@ -118,7 +170,7 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
    */
   public addRectComponents(
     ...components: (
-      | ImageOptionRectangle
+      | RectangleOption
       | RectComponentBuilder
       | ((builder: RectComponentBuilder) => RectComponentBuilder)
     )[]
@@ -132,7 +184,7 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
    */
   public addRoundComponents(
     ...components: (
-      | ImageOptionRoundRectangle
+      | RoundRectangleOption
       | RoundRectComponentBuilder
       | ((builder: RoundRectComponentBuilder) => RoundRectComponentBuilder)
     )[]
@@ -146,7 +198,7 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
    */
   public addArcComponents(
     ...components: (
-      | ImageOptionArc
+      | ArcOption
       | ArcComponentBuilder
       | ((builder: ArcComponentBuilder) => ArcComponentBuilder)
     )[]
@@ -160,7 +212,7 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
    */
   public addEllipseComponents(
     ...components: (
-      | ImageOptionEllipse
+      | EllipseOption
       | EllipseComponentBuilder
       | ((builder: EllipseComponentBuilder) => EllipseComponentBuilder)
     )[]
@@ -174,7 +226,7 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
    */
   public addFileComponents(
     ...components: (
-      | ImageLoadOption
+      | ImageOption
       | FileComponentBuilder
       | ((builder: FileComponentBuilder) => FileComponentBuilder)
     )[]
@@ -210,6 +262,10 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
     this.components.push(...components.map((c) => resolveBuilder(c, OperationComponentBuilder)));
     return this;
   }
+  /**
+   * Sets the components for this container.
+   * @param components The components to use.
+   */
   public setComponents(...components: DrawOption[]): this {
     return this.assign({ components });
   }
@@ -228,7 +284,7 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
     this.components.splice(
       start,
       deleteCount,
-      ...items.map((item) => createComponentBuilder(item))
+      ...items.map((item) => createComponentBuilder(item)),
     );
     return this;
   }
@@ -243,36 +299,9 @@ export class ContainerBuilder extends CanvasComponentBuilder<CanvasContainer> {
   }
 }
 abstract class CanvasOptionBuilder<
-  OptionType extends ImageOption | TextOption
-> extends CanvasComponentBuilder<OptionType> {
-  /**
-   * Sets the offset for this component.
-   * @param x The x-axis coordinate of the offset.
-   * @param y The y-axis coordinate of the offset.
-   */
-  public setOffset(x: number, y: number): this {
-    this.data.offset = [x, y];
-    return this;
-  }
-  /**
-   * Sets the alpha for this component.
-   * @param alpha The transparency to use.
-   */
-  public setAlpha(alpha: number): this {
-    this.data.alpha = alpha;
-    return this;
-  }
-  /**
-   * Sets the shadow option for this component.
-   * @remarks The shadow option must have `color` property. Also either `offset` or `blur` must be set for the shadow to render.
-   * @param shadow The shadow option to use.
-   */
-  public setShadow(shadow: RequireOneWith<ShadowOption, "color">): this {
-    this.data.shadow = shadow;
-    return this;
-  }
-}
-export class RectComponentBuilder extends CanvasOptionBuilder<ImageOptionRectangle> {
+  OptionType extends DrawOption,
+> extends DrawComponentBuilder<OptionType> {}
+export class RectComponentBuilder extends CanvasOptionBuilder<RectangleOption> {
   /**
    * Sets the size for this component.
    * @param width The horizontal length of the rectangle.
@@ -292,10 +321,10 @@ export class RectComponentBuilder extends CanvasOptionBuilder<ImageOptionRectang
    * Sets the stroke option for this component.
    * @param stroke Whether to stroke the shape, or the color to stroke with.
    */
-  public setStroke(stroke: boolean | CanvasColorResolvable): this {
+  public setStroke(stroke: boolean | StrokeOption): this {
     return this.assign({ stroke });
   }
-  public build(): ImageOptionRectangle {
+  public build(): RectangleOption {
     return {
       type: CanvasComponentType.Rectangle,
       offset: [0, 0],
@@ -304,7 +333,7 @@ export class RectComponentBuilder extends CanvasOptionBuilder<ImageOptionRectang
     };
   }
 }
-export class RoundRectComponentBuilder extends CanvasOptionBuilder<ImageOptionRoundRectangle> {
+export class RoundRectComponentBuilder extends CanvasOptionBuilder<RoundRectangleOption> {
   public setSize(width: number, height: number): this {
     return this.assign({ size: [width, height] });
   }
@@ -319,7 +348,7 @@ export class RoundRectComponentBuilder extends CanvasOptionBuilder<ImageOptionRo
    * Sets the stroke option for this component.
    * @param stroke Whether to stroke the shape, or the color to stroke with.
    */
-  public setStroke(stroke: boolean | CanvasColorResolvable): this {
+  public setStroke(stroke: boolean | StrokeOption): this {
     return this.assign({ stroke });
   }
   /**
@@ -329,7 +358,7 @@ export class RoundRectComponentBuilder extends CanvasOptionBuilder<ImageOptionRo
   public setRadii(radii: number | number[]): this {
     return this.assign({ radii });
   }
-  public build(): ImageOptionRoundRectangle {
+  public build(): RoundRectangleOption {
     return {
       type: CanvasComponentType.Round,
       offset: [0, 0],
@@ -338,7 +367,7 @@ export class RoundRectComponentBuilder extends CanvasOptionBuilder<ImageOptionRo
     };
   }
 }
-export class ArcComponentBuilder extends CanvasOptionBuilder<ImageOptionArc> {
+export class ArcComponentBuilder extends CanvasOptionBuilder<ArcOption> {
   /**
    * Sets the color for this component.
    * @param color The color to use.
@@ -350,7 +379,7 @@ export class ArcComponentBuilder extends CanvasOptionBuilder<ImageOptionArc> {
    * Sets the stroke option for this component.
    * @param stroke Whether to stroke the shape, or the color to stroke with.
    */
-  public setStroke(stroke: boolean | CanvasColorResolvable): this {
+  public setStroke(stroke: boolean | StrokeOption): this {
     return this.assign({ stroke });
   }
   /**
@@ -375,7 +404,7 @@ export class ArcComponentBuilder extends CanvasOptionBuilder<ImageOptionArc> {
   public setCounterClockWise(counterClockWise: boolean): this {
     return this.assign({ counterClockWise });
   }
-  public build(): ImageOptionArc {
+  public build(): ArcOption {
     return {
       type: CanvasComponentType.Arc,
       offset: [0, 0],
@@ -385,7 +414,7 @@ export class ArcComponentBuilder extends CanvasOptionBuilder<ImageOptionArc> {
     };
   }
 }
-export class EllipseComponentBuilder extends CanvasOptionBuilder<ImageOptionEllipse> {
+export class EllipseComponentBuilder extends CanvasOptionBuilder<EllipseOption> {
   /**
    * Sets the color for this component.
    * @param color The color to use.
@@ -397,7 +426,7 @@ export class EllipseComponentBuilder extends CanvasOptionBuilder<ImageOptionElli
    * Sets the stroke option for this component.
    * @param stroke Whether to stroke the shape, or the color to stroke with.
    */
-  public setStroke(stroke: boolean | CanvasColorResolvable): this {
+  public setStroke(stroke: boolean | StrokeOption): this {
     return this.assign({ stroke });
   }
   /**
@@ -430,7 +459,7 @@ export class EllipseComponentBuilder extends CanvasOptionBuilder<ImageOptionElli
   public setCounterClockWise(counterClockWise: boolean): this {
     return this.assign({ counterClockWise });
   }
-  public build(): ImageOptionEllipse {
+  public build(): EllipseOption {
     return {
       type: CanvasComponentType.Ellipse,
       offset: [0, 0],
@@ -441,7 +470,7 @@ export class EllipseComponentBuilder extends CanvasOptionBuilder<ImageOptionElli
     };
   }
 }
-export class FileComponentBuilder extends CanvasOptionBuilder<ImageLoadOption> {
+export class FileComponentBuilder extends CanvasOptionBuilder<ImageOption> {
   /**
    * Sets the size of the image.
    * @param width The horizontal length of the image.
@@ -457,7 +486,7 @@ export class FileComponentBuilder extends CanvasOptionBuilder<ImageLoadOption> {
   public setPath(path: PathLike): this {
     return this.assign({ path });
   }
-  public build(): ImageLoadOption {
+  public build(): ImageOption {
     return {
       type: CanvasComponentType.File,
       path: "",
@@ -482,7 +511,7 @@ export class TextComponentBuilder extends CanvasOptionBuilder<TextOption> {
    * Sets the stroke option for this component.
    * @param stroke Whether to stroke the text, or the color to stroke with.
    */
-  public setStroke(stroke: boolean | CanvasColorResolvable): this {
+  public setStroke(stroke: boolean | StrokeOption): this {
     return this.assign({ stroke });
   }
   /**
@@ -533,7 +562,7 @@ export class TextComponentBuilder extends CanvasOptionBuilder<TextOption> {
   public setFont(
     font: string,
     fontSize: string | number,
-    fontWeight: CanvasFontWeight = "normal"
+    fontWeight: CanvasFontWeight = "normal",
   ): this {
     return this.assign({ font, fontSize, fontWeight });
   }
@@ -550,6 +579,27 @@ export class TextComponentBuilder extends CanvasOptionBuilder<TextOption> {
    */
   public setTextAlign(textAlign: CanvasTextAlign): this {
     return this.assign({ textAlign });
+  }
+  /**
+   * Sets the text baseline for this component.
+   * @param textBaseline The baseline style to use.
+   */
+  public setTextBaseLine(textBaseline: CanvasTextBaseline): this {
+    return this.assign({ textBaseline });
+  }
+  /**
+   * Sets the text direction for this component.
+   * @param direction The text direction to use.
+   */
+  public setDirection(direction: "ltr" | "rtl"): this {
+    return this.assign({ direction });
+  }
+  /**
+   * Sets the language for this component.
+   * @param lang The language attribute to use.
+   */
+  public setLang(lang: string): this {
+    return this.assign({ lang });
   }
   public build(): TextOption {
     return {
@@ -581,16 +631,16 @@ export class OperationComponentBuilder extends CanvasComponentBuilder<OperationO
 }
 const resolveBuilder = <
   DataType extends AnyCanvasComponent,
-  Builder extends CanvasComponentBuilder<DataType>
+  Builder extends CanvasComponentBuilder<DataType>,
 >(
   builder: DataType | Builder | ((builder: Builder) => Builder),
-  constructor: new (data?: Partial<DataType>) => Builder
+  constructor: new (data?: Partial<DataType>) => Builder,
 ): Builder =>
   typeof builder === "function"
     ? builder(new constructor())
     : builder instanceof CanvasComponentBuilder
-    ? builder
-    : new constructor(builder);
+      ? builder
+      : new constructor(builder);
 
 const builderMap: {
   [K in keyof MappedComponentTypes]: new (data: any) => MappedComponentTypes[K];
@@ -606,7 +656,7 @@ const builderMap: {
 };
 
 const createComponentBuilder = <ComponentType extends keyof MappedComponentTypes>(
-  data: Extract<AnyCanvasComponent, { type: ComponentType }> | MappedComponentTypes[ComponentType]
+  data: Extract<AnyCanvasComponent, { type: ComponentType }> | MappedComponentTypes[ComponentType],
 ): MappedComponentTypes[ComponentType] => {
   if (data instanceof CanvasComponentBuilder) return data;
   return new builderMap[data.type](data);
